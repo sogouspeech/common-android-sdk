@@ -1,3 +1,6 @@
+// Copyright 2018 Sogou Inc. All rights reserved. 
+// Use of this source code is governed by the Apache 2.0 
+// license that can be found in the LICENSE file. 
 package com.sogou.sogocommon.utils;
 
 import android.os.Environment;
@@ -58,12 +61,9 @@ public class SogoConstants {
 	}
 
 	public static class URL_CONSTANT{
-		public static final String URL_PRIFIX = "api.speech.sogou.com";
-//		private static final String URL_PRIFIX = "api.eryio.com";0
+		public static final String URL_PRIFIX = "";
 
-//		public static final String URL_RECOGNIZE = "api.speech.sogou.com";
-		public static final String URL_RECOGNIZE = "canary.speech.sogou.com";
-		//		public static final String URL_RECOGNIZE = "rpc.eryio.com";
+		public static final String URL_RECOGNIZE = "";
 
 	}
 }

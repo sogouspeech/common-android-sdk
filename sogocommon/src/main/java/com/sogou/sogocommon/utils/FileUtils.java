@@ -1,11 +1,6 @@
-/*
- * Copyright (c) 2018. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
- * Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
- * Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
- * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
- * Vestibulum commodo. Ut rhoncus gravida arcu.
- */
-
+// Copyright 2018 Sogou Inc. All rights reserved. 
+// Use of this source code is governed by the Apache 2.0 
+// license that can be found in the LICENSE file. 
 package com.sogou.sogocommon.utils;
 
 import android.content.Context;
