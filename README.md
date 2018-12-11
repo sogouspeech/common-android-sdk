@@ -12,7 +12,7 @@ allprojects {
 ```
 增加以下依赖：
 ```
-implementation 'com.github.sogouspeech:common-android-sdk:0.2'
+implementation 'com.github.sogouspeech:common-android-sdk:1.0.0'
 ```
 
 
