@@ -16,22 +16,59 @@ syntax = "proto3";
 
 package sogou.speech.asr.v1;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
 
+import "sogou/speech/longrunning/operations.proto";
+
 option cc_enable_arenas = true;
+option csharp_namespace = "Sogou.Speech.Asr.V1";
 option go_package = "golang.speech.sogou.com/apis/asr/v1;asr";
 option java_multiple_files = true;
 option java_outer_classname = "AsrProto";
 option java_package = "com.sogou.speech.asr.v1";
 option objc_class_prefix = "SPB";
+option php_namespace = "Sogou\\Speech\\Asr\\V1";
+option swift_prefix = "SPB";
 
 
 service asr {
+
+  // Performs synchronous speech recognition: receive results after all audio
+  // has been sent and processed.
+  rpc Recognize(RecognizeRequest) returns (RecognizeResponse);
+
+  // Performs asynchronous speech recognition: receive results via sogou.speech.longrunning.GetOperation interface
+  rpc LongRunningRecognize(LongRunningRecognizeRequest) returns (sogou.speech.longrunning.Operation);
+
   // Performs bidirectional streaming speech recognition: receive results while
   // sending audio. This method is only available via the gRPC API (not REST).
   rpc StreamingRecognize(stream StreamingRecognizeRequest) returns (stream StreamingRecognizeResponse);
 }
+
+// The top-level message sent by the client for the `Recognize` method.
+message RecognizeRequest {
+  // *Required* Provides information to the recognizer that specifies how to
+  // process the request.
+  RecognitionConfig config = 1;
+
+  // *Required* The audio data to be recognized.
+  RecognitionAudio audio = 2;
+}
+
+// The top-level message sent by the client for the `LongRunningRecognize`
+// method.
+message LongRunningRecognizeRequest {
+  // *Required* Provides information to the recognizer that specifies how to
+  // process the request.
+  RecognitionConfig config = 1;
+
+  // *Required* The audio data to be recognized.
+  RecognitionAudio audio = 2;
+}
+
 
 // The top-level message sent by the client for the `StreamingRecognize` method.
 // Multiple `StreamingRecognizeRequest` messages are sent. The first message
@@ -85,16 +122,15 @@ message StreamingRecognitionConfig {
 
   // *Optional* If `true`, adds punctuation to interim recognition result hypotheses.
   // available only if RecognitionConfig.disable_automatic_punctuation = false AND interim_results = true
-  //
+  // 
   // NOTE: premium features.
   bool enable_interim_results_punctuation = 4;
 
-  // *Optional* similar to `single_utterance`. But if `true`,
+  // *Optional* similar to `single_utterance`. But if `true`, 
   // the recognizer will NOT detect any single spoken utterance
   // until the client closes the input stream (gRPC API) or
   // until the maximum time limit has been reached (approximately 30 seconds).
-  // It will return only one `StreamingRecognitionResult`s with the `is_final` set to `true`
-  // with an `END_OF_SINGLE_UTTERANCE` event and cease recognition.
+  // It will return only one `StreamingRecognitionResult`s with the `is_final` set to `true`.
   bool merge_utterance = 5;
 
 }
@@ -117,6 +153,8 @@ message RecognitionConfig {
     ENCODING_UNSPECIFIED = 0;
 
     // Uncompressed 16-bit signed little-endian samples (Linear PCM).
+    // `sample_rate_hertz` must be 16000.
+    // (when language-code = zh-cmn-Hans-CN and model = phonecall, it must be 8000)
     LINEAR16 = 1;
 
     // [`FLAC`](https://xiph.org/flac/documentation.html) (Free Lossless Audio
@@ -125,7 +163,14 @@ message RecognitionConfig {
     // requires only about half the bandwidth of `LINEAR16`. `FLAC` stream
     // encoding only supports 16-bit samples, however, not all fields in
     // `STREAMINFO` are supported.
+    // `sample_rate_hertz` must be 16000.
+    // (when language-code = zh-cmn-Hans-CN and model = phonecall, it must be 8000)
     FLAC = 2;
+
+    // Opus encoded audio frames in Ogg container
+    // ([OggOpus](https://wiki.xiph.org/OggOpus)).
+    // `sample_rate_hertz` must be one of 8000, 12000, 16000, 24000, or 48000.
+    OGG_OPUS = 6;
 
     // Sogou specific speex format 16-bit samples 1 channel
     SOGOU_SPEEX = 100;
@@ -135,13 +180,13 @@ message RecognitionConfig {
   AudioEncoding encoding = 1;
 
   // *Required* Sample rate in Hertz of the audio data sent in all
-  // `RecognitionAudio` messages. Valid values are only: 16000.
+  // `RecognitionAudio` messages.
+  // In most cases, it should be specified as 16000.
   int32 sample_rate_hertz = 2;
 
-  // *Required* The language of the supplied audio as a
-  // [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) language tag.
+  // *Required* The language code of the supplied audio.
   // Example: "zh-cmn-Hans-CN".
-  // See [Language Support] for a list of the currently supported language codes.
+  // See [Language Support](https://docs.speech.sogou.com/docs/asr/resources/languages) for a list of the currently supported language codes.
   string language_code = 3;
 
   // *Optional* Maximum number of recognition hypotheses to be returned.
@@ -165,16 +210,56 @@ message RecognitionConfig {
   // `false`.
   bool enable_word_time_offsets = 8;
 
+  // *Optional* If `true`, the top result includes a list of characters and
+  // the start and end time offsets (timestamps) for those characters. If
+  // `false`, no character-level time offset information is returned. The default is
+  // `false`. If both enable_word_time_offsets and enable_character_time_offsets are set to `true`
+  // enable_character_time_offsets will take effect.
+  bool enable_character_time_offsets = 7;
+
+  // *Optional* Metadata regarding this request.
+  RecognitionMetadata metadata = 9;
+
   // *Optional* If 'true', stop adds punctuation to recognition result hypotheses.
   // The default 'false' value DOES add punctuation to result hypotheses.
   bool disable_automatic_punctuation = 11;
-
 
   // *Optional* Which model to select for the given request. Select the model
   // best suited to your domain to get best results. If a model is not
   // explicitly specified, "default" model is used.
   string model = 13;
+
+  // *Optional* Configuration for some specific scenarios
+  repeated google.protobuf.Any extra_configs = 20;
 }
+
+// Description of audio data to be recognized.
+message RecognitionMetadata {
+
+  // Enumerates the types of capture settings describing an audio file.
+  enum MicrophoneDistance {
+    // Audio type is not known.
+    MICROPHONE_DISTANCE_UNSPECIFIED = 0;
+
+    // The audio was captured from a closely placed microphone. Eg. phone,
+    // dictaphone, or handheld microphone. Generally if there speaker is within
+    // 1 meter of the microphone.
+    NEARFIELD = 100;
+
+    // The speaker if within 3 meters of the microphone.
+    MIDFIELD = 300;
+
+    // The speaker is more than 3 meters away from the microphone.
+    FARFIELD = 500;
+  }
+
+  // The audio type that most closely describes the audio being recognized.
+  MicrophoneDistance microphone_distance = 4;
+
+  // The name of device used to make the recording.
+  string recording_device_name = 7;
+}
+
 
 // Provides "hints" to the speech recognizer to favor specific words and phrases
 // in the results.
@@ -202,61 +287,60 @@ message RecognitionAudio {
     // ** CURRENTLY SOGOU INTERNAL USE ONLY. **
     // URI that points to a file that contains audio data bytes as specified in
     // `RecognitionConfig`. Currently, only SOGOU INTERNAL URIs are
-    // supported, (other URI formats return [google.rpc.Code.INVALID_ARGUMENT]).
+    // supported, (other URI formats return [google.rpc.Code.INVALID_ARGUMENT]). 
     string uri = 2;
   }
 }
 
+
+// The only message returned to the client by the `Recognize` method. It
+// contains the result as zero or more sequential `SpeechRecognitionResult`
+// messages.
+message RecognizeResponse {
+  // Output only. Sequential list of transcription results corresponding to
+  // sequential portions of audio.
+  repeated SpeechRecognitionResult results = 1;
+}
+
+
+// The only message returned to the client by the `LongRunningRecognize` method.
+// It contains the result as zero or more sequential `SpeechRecognitionResult`
+// messages. It is included in the `result.response` field of the `Operation`
+// returned by the `GetOperation` call of the `sogou.speech.longrunning.Operations`
+// service.
+message LongRunningRecognizeResponse {
+
+  repeated SpeechRecognitionResult results = 1;
+
+  // *Output-only* Other informations related to this recongition result
+  map<string, string> extra = 2;
+}
+
+
+// Describes the progress of a long-running `LongRunningRecognize` call. It is
+// included in the `metadata` field of the `Operation` returned by the
+// `GetOperation` call of the `sogou.speech.longrunning.Operations` service.
+message LongRunningRecognizeMetadata {
+  // Approximate percentage of audio processed thus far. Guaranteed to be 100
+  // when the audio is fully processed and the results are available.
+  int32 progress_percent = 1;
+
+  // Time when the request was received.
+  google.protobuf.Timestamp start_time = 2;
+
+  // Time of the most recent processing update.
+  google.protobuf.Timestamp last_update_time = 3;
+}
 
 // `StreamingRecognizeResponse` is the only message returned to the client by
 // `StreamingRecognize`. A series of zero or more `StreamingRecognizeResponse`
 // messages are streamed back to the client. If there is no recognizable
 // audio, and `single_utterance` is set to false, then no messages are streamed
 // back to the client.
-//
-// Here's an example of a series of ten `StreamingRecognizeResponse`s that might
-// be returned while processing audio:
-//
-// 1. results { alternatives { transcript: "tube" } stability: 0.01 }
-//
-// 2. results { alternatives { transcript: "to be a" } stability: 0.01 }
-//
-// 3. results { alternatives { transcript: "to be" } stability: 0.9 }
-//    results { alternatives { transcript: " or not to be" } stability: 0.01 }
-//
-// 4. results { alternatives { transcript: "to be or not to be"
-//                             confidence: 0.92 }
-//              alternatives { transcript: "to bee or not to bee" }
-//              is_final: true }
-//
-// 5. results { alternatives { transcript: " that's" } stability: 0.01 }
-//
-// 6. results { alternatives { transcript: " that is" } stability: 0.9 }
-//    results { alternatives { transcript: " the question" } stability: 0.01 }
-//
-// 7. results { alternatives { transcript: " that is the question"
-//                             confidence: 0.98 }
-//              alternatives { transcript: " that was the question" }
-//              is_final: true }
-//
-// Notes:
-//
-// - Only two of the above responses #4 and #7 contain final results; they are
-//   indicated by `is_final: true`. Concatenating these together generates the
-//   full transcript: "to be or not to be that is the question".
-//
-// - The others contain interim `results`. #3 and #6 contain two interim
-//   `results`: the first portion has a high stability and is less likely to
-//   change; the second portion has a low stability and is very likely to
-//   change. A UI designer might choose to show only high stability `results`.
-//
-// - The specific `stability` and `confidence` values shown above are only for
-//   illustrative purposes. Actual values may vary.
-//
-// - In each response, only one of these fields will be set:
-//     `error`,
-//     `speech_event_type`, or
-//     one or more (repeated) `results`.
+// In each response, only one of these fields will be set:
+//   `error`,
+//   `speech_event_type`, or
+//   one or more (repeated) `results`.
 message StreamingRecognizeResponse {
   // Indicates the type of speech event.
   enum SpeechEventType {
@@ -307,7 +391,7 @@ message StreamingRecognitionResult {
   // This field is only provided for interim results (`is_final=false`).
   // The default of 0.0 is a sentinel value indicating `stability` was not set.
   float stability = 3;
-
+  
   // *Output-only* Other informations related to this recongition result
   map<string, string> extra = 4;
 }
@@ -319,6 +403,9 @@ message SpeechRecognitionResult {
   // These alternatives are ordered in terms of accuracy, with the top (first)
   // alternative being the most probable, as ranked by the recognizer.
   repeated SpeechRecognitionAlternative alternatives = 1;
+
+  // *Output-only* Other informations related to this recongition result
+  map<string, string> extra = 2;
 }
 
 
@@ -345,7 +432,7 @@ message SpeechRecognitionAlternative {
 
 // Word-specific information for recognized words. Word information is only
 // included in the response when certain request parameters are set, such
-// as `enable_word_time_offsets`.
+// as `enable_word_time_offsets` or `enable_character_time_offsets`.
 message WordInfo {
   // *Output-only* Time offset relative to the beginning of the audio,
   // and corresponding to the start of the spoken word.
