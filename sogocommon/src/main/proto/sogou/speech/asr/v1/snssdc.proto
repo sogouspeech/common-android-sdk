@@ -1,0 +1,57 @@
+// Copyright 2018 Sogou Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package sogou.speech.asr.v1;
+
+import "google/protobuf/duration.proto";
+
+option cc_enable_arenas = true;
+option csharp_namespace = "Sogou.Speech.Asr.V1";
+option go_package = "golang.speech.sogou.com/apis/asr/v1;asr";
+option java_multiple_files = true;
+option java_outer_classname = "NSDProto";
+option java_package = "com.sogou.speech.asr.v1";
+option objc_class_prefix = "SPB";
+option php_namespace = "Sogou\\Speech\\Asr\\V1";
+option swift_prefix = "SPB";
+
+
+message StreamingNonSpeechSoundDetectionConfig {
+    bool enable_non_speech_sound_detection = 1;
+}
+
+message LongrunningNonSpeechSoundDetectionConfig {
+    bool enable_non_speech_sound_detection = 1;
+}
+
+
+message NonSpeechSoundInfo {
+    // *Output-only* Time offset relative to the beginning of the audio,
+    // and corresponding to the start of the non-speech event.
+    google.protobuf.Duration start_time = 1;
+
+    // *Output-only* Time offset relative to the beginning of the audio,
+    // and corresponding to the end of the non-speech event.
+    google.protobuf.Duration end_time = 2;
+
+    // *Output-only* The non-speech sound type
+    // possible values are:
+    // APPLAUSE
+    // LAUGHTER
+    // MUSIC
+    // BABBLE
+    string sound_type = 3;
+}
