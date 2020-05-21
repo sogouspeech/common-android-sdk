@@ -46,12 +46,15 @@ message TranslateTextRequest {
 message TranslateConfig {
 
   // *Required* The language code of the source text, 
-  // set to one of the language codes listed in [Language Support](https://docs.zhiyin.sogou.com/docs/mt/resources/languages). 
+  // set to one of the language codes listed in [Language Support](https://zhiyin.sogou.com/doc/?url=/docs/content/mt/concepts/lauguages/). 
   // Example: "zh-cmn-Hans-CN".
   string source_language_code = 1;
 
   // *Required* The language code of the target text
   string target_language_code = 2;
+
+  // *Optional*. The model type requested for this translation.
+  string model = 3;
   
 }
 
